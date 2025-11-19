@@ -1,0 +1,327 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Softcurse · PREVIEW MONITOR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@300;400;600&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+
+        body {
+            font-family: 'Orbitron', system-ui, sans-serif;
+            background: radial-gradient(circle at top, #1a0824 0%, #050308 40%, #000 100%);
+            color: #f5e9ff;
+            position: relative;
+        }
+
+        .bg-fog {
+            position: fixed;
+            inset: -20%;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(circle at 15% 15%, rgba(157,78,221,0.4), transparent 60%), radial-gradient(circle at 80% 30%, rgba(0,246,255,0.25), transparent 55%), radial-gradient(circle at 30% 85%, rgba(207,163,95,0.22), transparent 55%);
+            mix-blend-mode: screen;
+            animation: fogDriftPreview 30s linear infinite alternate;
+            opacity: 0.9;
+        }
+
+        @keyframes fogDriftPreview {
+            0% {
+                transform: translate3d(0,0,0) scale(1);
+            }
+
+            50% {
+                transform: translate3d(18px,-10px,0) scale(1.05);
+            }
+
+            100% {
+                transform: translate3d(-14px,12px,0) scale(1.02);
+            }
+        }
+
+        .frame {
+            position: fixed;
+            inset: 6px;
+            border: 1px solid rgba(0,246,255,0.25);
+            box-shadow: 0 0 18px rgba(0,246,255,0.35), 0 0 60px rgba(157,78,221,0.35);
+            pointer-events: none;
+        }
+
+            .frame::before, .frame::after {
+                content: "";
+                position: absolute;
+                left: 10%;
+                right: 10%;
+                height: 1px;
+                background: linear-gradient(to right, transparent, rgba(0,246,255,0.7), transparent);
+                opacity: 0.4;
+            }
+
+            .frame::before {
+                top: 48px;
+            }
+
+            .frame::after {
+                bottom: 34px;
+            }
+
+        .shell {
+            position: relative;
+            z-index: 1;
+            min-height: 100%;
+            padding: 10px 16px 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 6px;
+        }
+
+        .brand-title {
+            font-size: 1.1rem;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #f7f2ff;
+            text-shadow: 0 0 10px rgba(0,246,255,0.9), 0 0 24px rgba(157,78,221,0.9);
+        }
+
+        .brand-sub {
+            font-size: 0.55rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #cfa35f;
+        }
+
+            .brand-sub span {
+                color: #00f6ff;
+            }
+
+        .status-pill {
+            font-size: 0.6rem;
+            letter-spacing: 0.18em;
+            padding: 4px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(0,246,255,0.4);
+            background: linear-gradient(145deg, rgba(7,11,24,0.94), rgba(31,8,53,0.96));
+            box-shadow: 0 0 12px rgba(0,246,255,0.7), 0 0 30px rgba(157,78,221,0.7);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00f6ff;
+            box-shadow: 0 0 10px #00f6ff, 0 0 20px rgba(0,246,255,0.95);
+            animation: pulseDotPrev 1.4s ease-in-out infinite;
+        }
+
+        @keyframes pulseDotPrev {
+            0%,100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: scale(1.5);
+                opacity: 1;
+            }
+        }
+
+        .main-layout {
+            flex: 1;
+            margin-top: 6px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,246,255,0.4);
+            background: linear-gradient(145deg, rgba(10,4,18,0.98), rgba(20,5,36,0.98));
+            box-shadow: 0 0 16px black, 0 0 30px rgba(0,246,255,0.45);
+            position: relative;
+            overflow: auto;
+            padding: 10px 12px 14px;
+        }
+
+            .main-layout::before {
+                content: "";
+                position: absolute;
+                inset: 8px;
+                border-radius: 6px;
+                border: 1px dashed rgba(157,78,221,0.25);
+                opacity: 0.8;
+                pointer-events: none;
+            }
+
+        .preview-banner {
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #e8dcff;
+            margin-bottom: 6px;
+        }
+
+        .preview-tip {
+            font-size: 0.6rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(229,217,255,0.8);
+            margin-bottom: 10px;
+        }
+
+        .hovered {
+            outline: 2px solid #00f6ff !important;
+            outline-offset: 2px !important;
+            box-shadow: 0 0 16px rgba(0,246,255,0.9) !important;
+            transition: all 0.12s ease !important;
+        }
+
+        .clicked {
+            outline: 3px solid #ffa500 !important;
+            outline-offset: 3px !important;
+            box-shadow: 0 0 20px rgba(255,165,0,0.9) !important;
+        }
+
+        footer {
+            margin-top: 4px;
+            text-align: center;
+            font-size: 0.6rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #e8dcff;
+            font-family: 'Cinzel Decorative', serif;
+            text-shadow: 0 0 8px rgba(0,246,255,0.6), 0 0 18px rgba(157,78,221,0.8);
+        }
+
+            footer .author {
+                color: #ffe8a4;
+            }
+
+            footer .org {
+                color: #00f6ff;
+            }
+    </style>
+</head>
+<body>
+    <div class="bg-fog"></div>
+    <div class="frame"></div>
+
+    <div class="shell">
+        <header>
+            <div class="brand-main">
+                <div class="brand-title">Softcurse · PREVIEW MONITOR</div>
+                <div class="brand-sub">ECHO CHANNEL · <span>BOUND TO CODE SANCTUM</span></div>
+            </div>
+            <div class="status-pill"><div class="status-dot"></div><span>RENDER: ACTIVE</span></div>
+        </header>
+
+        <div class="main-layout">
+            <div class="preview-banner">OUTPUT VIEW</div>
+            <div class="preview-tip">HOVER → MAP TO SOURCE · CLICK → HARD HIGHLIGHT IN EDITOR</div>
+            <div id="content"></div>
+        </div>
+
+        <footer>
+            <span class="label">Created by</span>
+            <span class="author">Dante Berezinsky</span> · <span class="org">Softcurse Corp.</span>
+        </footer>
+    </div>
+
+    <script>
+        // === ALWAYS send JSON object, never raw string ===
+        function sendMessage(type, snippet = "") {
+            if (window.chrome?.webview) {
+                window.chrome.webview.postMessage({
+                    type: type,
+                    htmlSnippet: snippet
+                });
+            }
+        }
+
+        // Hover: Preview → Editor
+        document.addEventListener("mouseover", e => {
+            const el = e.target;
+            if (!el || el === document.body || el.id === "content") return;
+
+            el.classList.add("hovered");
+            const line = (el.outerHTML || "").split('\n')[0].trim();
+            sendMessage("hover", line);
+        }, true);
+
+        document.addEventListener("mouseout", e => {
+            e.target.classList.remove("hovered");
+            sendMessage("unhover");
+        }, true);
+
+        // Click: Hard highlight in editor
+        document.addEventListener("click", e => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Remove previous click highlight
+            document.querySelectorAll(".clicked").forEach(x => x.classList.remove("clicked"));
+
+            const el = e.target;
+            el.classList.add("clicked");
+            const line = (el.outerHTML || "").split('\n')[0].trim();
+            sendMessage("highlight", line);
+        }, true);
+
+        // === Editor → Preview: flash element ===
+        if (window.chrome?.webview) {
+            window.chrome.webview.addEventListener("message", event => {
+                try {
+                    // event.data is now guaranteed to be object (from editor)
+                    const data = event.data;
+                    if (data.type !== "editorHover" || !data.htmlSnippet) return;
+
+                    const token = data.htmlSnippet.trim().split(' ')[0]
+                        .replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+                    if (!token) return;
+
+                    const walker = document.createTreeWalker(
+                        document.getElementById("content") || document.body,
+                        NodeFilter.SHOW_ELEMENT
+                    );
+
+                    let node;
+                    while (node = walker.nextNode()) {
+                        const html = node.outerHTML || "";
+                        if (html.toLowerCase().includes(token)) {
+                            node.classList.add("hovered");
+                            setTimeout(() => node.classList.remove("hovered"), 300);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Preview sync error:", err);
+                }
+            });
+        }
+
+        // Initial content
+        document.getElementById("content").innerHTML = `
+            <div style="color:#0ff; text-align:center; padding-top:15%; font-size:1.1rem; letter-spacing:0.2em;">
+                <h1>PREVIEW REALM ACTIVE</h1>
+                <p>Edit code in the sanctum to begin...</p>
+            </div>`;
+    </script>
+</body>
+</html>
