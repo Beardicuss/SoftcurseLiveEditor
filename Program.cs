@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Forms;
+using HtmlLiveEditor.Services;
 
 namespace HtmlLiveEditor
 {
@@ -10,7 +11,14 @@ namespace HtmlLiveEditor
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+
+            // Lightweight DI — create services and inject into form
+            var log = new AppLogger();
+            var fileService = new FileService(log);
+            var editorBridge = new EditorBridge(log);
+            var previewBridge = new PreviewBridge(log);
+
+            Application.Run(new Form1(log, fileService, editorBridge, previewBridge));
         }
     }
 }

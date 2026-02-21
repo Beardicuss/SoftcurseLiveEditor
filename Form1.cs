@@ -1,41 +1,73 @@
-﻿using Microsoft.Web.WebView2.Core;
-using System;
+﻿using System;
 using System.IO;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Windows.Forms;
+using Microsoft.Web.WebView2.Core;
+using HtmlLiveEditor.Config;
+using HtmlLiveEditor.Services;
 
 namespace HtmlLiveEditor
 {
     public partial class Form1 : Form
     {
-        private string? currentFilePath = null;
-        private string lastHtml = string.Empty;
-        private bool isEditorReady = false;
-        private string? pendingEditorContent = null;
+        private readonly IAppLogger _log;
+        private readonly IFileService _fileService;
+        private readonly EditorBridge _editor;
+        private readonly PreviewBridge _preview;
 
-        public Form1()
+        private string _lastHtml = string.Empty;
+        private System.Windows.Forms.Timer? _autoSaveTimer;
+        private string _currentLanguage = "html";
+
+        public Form1(IAppLogger log, IFileService fileService, EditorBridge editor, PreviewBridge preview)
         {
+            _log = log;
+            _fileService = fileService;
+            _editor = editor;
+            _preview = preview;
+
             InitializeComponent();
 
+            // ── File menu ──
             this.Load += Form1_Load;
-            this.openToolStripMenuItem.Click += OpenToolStripMenuItem_Click;
-            this.saveToolStripMenuItem.Click += SaveToolStripMenuItem_Click;
-            this.saveAsToolStripMenuItem.Click += SaveAsToolStripMenuItem_Click;
+            this.openToolStripMenuItem.Click += OnOpen;
+            this.saveToolStripMenuItem.Click += OnSave;
+            this.saveAsToolStripMenuItem.Click += OnSaveAs;
+
+            // ── Theme menu ──
+            this.lightThemeToolStripMenuItem.Click += (_, _) => _editor.SetTheme("vs");
+            this.darkThemeToolStripMenuItem.Click += (_, _) => _editor.SetTheme("vs-dark");
+
+            // ── Language menu ──
+            this.langHtml.Click += (_, _) => SetLanguage("html");
+            this.langCss.Click += (_, _) => SetLanguage("css");
+            this.langJs.Click += (_, _) => SetLanguage("javascript");
+
+            // ── Refresh preview ──
+            this.refreshPreviewMenuItem.Click += (_, _) => RefreshPreview();
+
+            // ── Snippets ──
+            this.snippetBoilerplate.Click += (_, _) => _editor.InsertSnippet(Snippets.Boilerplate);
+            this.snippetFlexbox.Click += (_, _) => _editor.InsertSnippet(Snippets.Flexbox);
+            this.snippetGrid.Click += (_, _) => _editor.InsertSnippet(Snippets.Grid);
+            this.snippetForm.Click += (_, _) => _editor.InsertSnippet(Snippets.Form);
+            this.snippetTable.Click += (_, _) => _editor.InsertSnippet(Snippets.Table);
         }
+
+        // ═══════════════════════════════════════════
+        //  Initialization
+        // ═══════════════════════════════════════════
 
         private async void Form1_Load(object? sender, EventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("=== Form1_Load started ===");
+            _log.Info("=== Form1_Load started ===");
+            SetStatus("Initializing...");
 
             await webViewEditor.EnsureCoreWebView2Async();
             await webViewPreview.EnsureCoreWebView2Async();
 
-            System.Diagnostics.Debug.WriteLine("WebView2 initialized");
+            _log.Info("WebView2 initialized");
 
             string appPath = Path.Combine(Application.StartupPath, "App");
-            System.Diagnostics.Debug.WriteLine($"App path: {appPath}");
-
             if (!Directory.Exists(appPath))
             {
                 MessageBox.Show(
@@ -46,266 +78,233 @@ namespace HtmlLiveEditor
                 return;
             }
 
-            var options = new CoreWebView2EnvironmentOptions();
-            var env = await CoreWebView2Environment.CreateAsync(null, null, options);
-
             webViewEditor.CoreWebView2!.SetVirtualHostNameToFolderMapping(
-                "appassets.local", appPath, CoreWebView2HostResourceAccessKind.Allow);
+                AppConstants.VirtualHost, appPath, CoreWebView2HostResourceAccessKind.Allow);
             webViewPreview.CoreWebView2!.SetVirtualHostNameToFolderMapping(
-                "appassets.local", appPath, CoreWebView2HostResourceAccessKind.Allow);
+                AppConstants.VirtualHost, appPath, CoreWebView2HostResourceAccessKind.Allow);
 
-            System.Diagnostics.Debug.WriteLine("Virtual host mapping set");
+            // Attach bridges
+            _editor.Attach(webViewEditor);
+            _preview.Attach(webViewPreview);
 
-            // Attach event handlers BEFORE navigating
-            webViewEditor.CoreWebView2.WebMessageReceived += EditorMessageReceived;
-            webViewPreview.CoreWebView2.WebMessageReceived += PreviewMessageReceived;
+            // Wire events
+            _editor.EditorReady += OnEditorReady;
+            _editor.CodeChanged += OnCodeChanged;
+            _editor.HoverLine += OnEditorHover;
+            _preview.ElementHovered += OnPreviewHover;
+            _preview.ElementUnhovered += OnPreviewUnhover;
+            _preview.ElementClicked += OnPreviewClick;
 
-            System.Diagnostics.Debug.WriteLine("Event handlers attached");
+            // Navigate
+            webViewEditor.Source = new Uri(AppConstants.EditorUrl);
+            webViewPreview.Source = new Uri(AppConstants.PreviewUrl);
 
-            webViewEditor.Source = new Uri("https://appassets.local/editor.html");
-            webViewPreview.Source = new Uri("https://appassets.local/preview.html");
-
-            System.Diagnostics.Debug.WriteLine("=== Form1_Load completed ===");
-        }
-
-        // ---------- Editor → Preview ----------
-        private async void EditorMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
-        {
-            try
+            // Start auto-save timer
+            _autoSaveTimer = new System.Windows.Forms.Timer { Interval = AppConstants.AutoSaveIntervalMs };
+            _autoSaveTimer.Tick += (_, _) =>
             {
-                string json = e.WebMessageAsJson;
-                if (string.IsNullOrWhiteSpace(json)) return;
-
-                using JsonDocument doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-
-                if (root.TryGetProperty("type", out var typeProp))
+                if (!string.IsNullOrEmpty(_lastHtml))
                 {
-                    string? type = typeProp.GetString();
-
-                    if (type == "editorReady")
-                    {
-                        isEditorReady = true;
-                        System.Diagnostics.Debug.WriteLine("Editor is now ready!");
-
-                        if (pendingEditorContent != null)
-                        {
-                            System.Diagnostics.Debug.WriteLine("Sending pending content to editor...");
-                            SetEditorContent(pendingEditorContent);
-                            pendingEditorContent = null;
-                        }
-                        return;
-                    }
-
-                    if (type == "codeChanged")
-                    {
-                        string? html = root.GetProperty("text").GetString();
-                        lastHtml = html ?? string.Empty;
-                        webViewPreview.CoreWebView2?.NavigateToString(lastHtml);
-
-                        string lastPath = Path.Combine(Application.StartupPath, "App", "last.html");
-                        await File.WriteAllTextAsync(lastPath, lastHtml);
-                        return;
-                    }
-
-                    if (type == "hoverLine")
-                    {
-                        string? snippet = root.GetProperty("snippet").GetString();
-                        if (!string.IsNullOrWhiteSpace(snippet))
-                        {
-                            var msg = JsonSerializer.Serialize(new { type = "editorHover", htmlSnippet = snippet });
-                            webViewPreview.CoreWebView2?.PostWebMessageAsString(msg);
-                        }
-                        return;
-                    }
+                    _fileService.AutoSave(_lastHtml);
+                    SetStatus("Auto-saved");
                 }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("Editor error: " + ex.Message);
-            }
-        }
-
-        // ---------- Preview → Editor (Hover / Highlight) ----------
-        private void PreviewMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
-        {
-            try
-            {
-                string json = e.WebMessageAsJson;
-                if (string.IsNullOrWhiteSpace(json)) return;
-
-                using JsonDocument doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-
-                if (!root.TryGetProperty("type", out var typeProp)) return;
-                string? msgType = typeProp.GetString();
-
-                string? snippet = root.TryGetProperty("htmlSnippet", out var prop)
-                    ? prop.GetString()
-                    : null;
-
-                if (string.IsNullOrEmpty(snippet)) return;
-
-                // Escape for JS
-                string escaped = snippet
-                    .Replace("\\", "\\\\")
-                    .Replace("`", "\\`")
-                    .Replace("$", "\\$");
-
-                string js = $@"
-            (function() {{
-                if (!window.editor) return;
-                const text = window.editor.getValue();
-                const lines = text.split('\n');
-                let targetLine = -1;
-                const token = `{escaped}`.trim().split(' ')[0];
-
-                for (let i = 0; i < lines.length; i++) {{
-                    if (lines[i].includes(token)) {{
-                        targetLine = i + 1;
-                        break;
-                    }}
-                }}
-
-                if (targetLine <= 0) return;
-
-                if ('{msgType}' === 'hover') {{
-                    if (window._hoverDeco) window.editor.deltaDecorations(window._hoverDeco, []);
-                    window._hoverDeco = window.editor.deltaDecorations([], [{{
-                        range: new monaco.Range(targetLine, 1, targetLine, 1),
-                        options: {{ isWholeLine: true, className: 'hover-line' }}
-                    }}]);
-                }} else if ('{msgType}' === 'unhover') {{
-                    if (window._hoverDeco) window.editor.deltaDecorations(window._hoverDeco, []);
-                }} else if ('{msgType}' === 'highlight') {{
-                    if (window._lastDeco) window.editor.deltaDecorations(window._lastDeco, []);
-                    window._lastDeco = window.editor.deltaDecorations([], [{{
-                        range: new monaco.Range(targetLine, 1, targetLine, 1),
-                        options: {{ isWholeLine: true, className: 'highlighted-line' }}
-                    }}]);
-                    window.editor.revealLineInCenter(targetLine);
-                }}
-            }})();";
-
-                webViewEditor.CoreWebView2?.ExecuteScriptAsync(js);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("Preview→Editor error: " + ex.Message);
-            }
-        }
-
-        // ---------- File Operations ----------
-        private void OpenToolStripMenuItem_Click(object? sender, EventArgs e)
-        {
-            using var dialog = new OpenFileDialog
-            {
-                Filter = "HTML Files|*.html;*.htm|All Files|*.*",
-                Title = "Open HTML File"
             };
+            _autoSaveTimer.Start();
 
-            if (dialog.ShowDialog() != DialogResult.OK) return;
-
-            currentFilePath = dialog.FileName;
-            string content = File.ReadAllText(currentFilePath);
-
-            lastHtml = content;
-            webViewPreview.CoreWebView2?.NavigateToString(content);
-
-            // Send to editor ONLY when it's ready
-            if (isEditorReady)
-            {
-                SetEditorContent(content);
-            }
-            else
-            {
-                pendingEditorContent = content; // will be sent when ready
-            }
+            _log.Info("=== Form1_Load completed ===");
         }
 
-        private void SaveToolStripMenuItem_Click(object? sender, EventArgs e)
+        private void OnEditorReady()
         {
-            if (string.IsNullOrEmpty(lastHtml)) return;
-
-            if (currentFilePath is null)
-            {
-                SaveAsToolStripMenuItem_Click(sender, e);
-                return;
-            }
-
-            File.WriteAllText(currentFilePath, lastHtml);
+            SetStatus("Editor ready — LINK: STABLE");
         }
 
-        private void SaveAsToolStripMenuItem_Click(object? sender, EventArgs e)
+        // ═══════════════════════════════════════════
+        //  Editor → Preview
+        // ═══════════════════════════════════════════
+
+        private void OnCodeChanged(string html)
         {
-            using var dialog = new SaveFileDialog
-            {
-                Filter = "HTML Files|*.html|All Files|*.*",
-                Title = "Save HTML File"
-            };
+            _lastHtml = html;
 
-            if (dialog.ShowDialog() != DialogResult.OK) return;
+            if (_currentLanguage == "html")
+                _preview.UpdateContent(html);
 
-            currentFilePath = dialog.FileName;
-            File.WriteAllText(currentFilePath, lastHtml);
+            SetStatus($"Editing · {html.Length} chars");
         }
 
-        // ---------- Robust Editor Update ----------
-        private void SetEditorContent(string html)
+        private void OnEditorHover(string snippet)
         {
-            if (webViewEditor.CoreWebView2 == null)
-            {
-                System.Diagnostics.Debug.WriteLine("ERROR: webViewEditor.CoreWebView2 is null!");
-                return;
-            }
-
-            System.Diagnostics.Debug.WriteLine($"SetEditorContent called with {html.Length} characters");
-
-            // Convert to Base64 to avoid all escaping issues
-            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(html);
-            string base64 = Convert.ToBase64String(bytes);
-
-            string js = $@"
-                (function() {{
-                    console.log('SetEditorContent script executing...');
-                    let attempts = 0;
-                    const maxAttempts = 100;
-                    
-                    function trySet() {{
-                        attempts++;
-                        console.log('Attempt ' + attempts + ' to set editor content');
-                        
-                        if (window.editor && typeof window.editor.setValue === 'function') {{
-                            try {{
-                                // Decode Base64
-                                const base64 = '{base64}';
-                                const decoded = atob(base64);
-                                const content = decodeURIComponent(escape(decoded));
-                                
-                                window.editor.setValue(content);
-                                console.log('✓✓✓ SUCCESS: Editor content set! Length: ' + content.length);
-                                return true;
-                            }} catch(e) {{
-                                console.error('ERROR setting editor value:', e);
-                                return false;
-                            }}
-                        }} else {{
-                            console.warn('Editor not ready. window.editor exists: ' + !!window.editor);
-                        }}
-                        
-                        if (attempts < maxAttempts) {{
-                            setTimeout(trySet, 100);
-                        }} else {{
-                            console.error('FAILED: Could not set editor content after ' + maxAttempts + ' attempts');
-                        }}
-                        return false;
-                    }}
-                    
-                    trySet();
-                }})();";
-
-            System.Diagnostics.Debug.WriteLine("Executing JavaScript to set editor content...");
-            webViewEditor.CoreWebView2.ExecuteScriptAsync(js);
+            if (!string.IsNullOrWhiteSpace(snippet))
+                _preview.SendEditorHover(snippet);
         }
+
+        // ═══════════════════════════════════════════
+        //  Preview → Editor
+        // ═══════════════════════════════════════════
+
+        private void OnPreviewHover(string snippet)
+        {
+            _editor.FindAndHighlight(snippet, "hover-line");
+        }
+
+        private void OnPreviewUnhover()
+        {
+            _editor.ClearDecorations("_hoverDeco");
+        }
+
+        private void OnPreviewClick(string snippet)
+        {
+            _editor.FindAndHighlight(snippet, "highlighted-line");
+            SetStatus("Element highlighted in editor");
+        }
+
+        // ═══════════════════════════════════════════
+        //  File Operations
+        // ═══════════════════════════════════════════
+
+        private void OnOpen(object? sender, EventArgs e)
+        {
+            var content = _fileService.Open();
+            if (content == null) return;
+
+            _lastHtml = content;
+            _preview.UpdateContent(content);
+            _editor.SetContent(content);
+
+            this.Text = $"Softcurse LiveScriptor — {Path.GetFileName(_fileService.CurrentFilePath)}";
+            SetStatus($"Opened: {Path.GetFileName(_fileService.CurrentFilePath)}");
+
+            if (_fileService.IsLargeFile(content))
+            {
+                SetStatus("⚠ Large file — preview may be slow");
+                _log.Warn($"Large file opened: {content.Length} chars");
+            }
+        }
+
+        private void OnSave(object? sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(_lastHtml)) return;
+
+            if (_fileService.Save(_lastHtml))
+                SetStatus($"Saved: {Path.GetFileName(_fileService.CurrentFilePath)}");
+        }
+
+        private void OnSaveAs(object? sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(_lastHtml)) return;
+
+            if (_fileService.SaveAs(_lastHtml))
+            {
+                this.Text = $"Softcurse LiveScriptor — {Path.GetFileName(_fileService.CurrentFilePath)}";
+                SetStatus($"Saved As: {Path.GetFileName(_fileService.CurrentFilePath)}");
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        //  Language / Theme / Refresh
+        // ═══════════════════════════════════════════
+
+        private void SetLanguage(string language)
+        {
+            _currentLanguage = language;
+            _editor.SetLanguage(language);
+            SetStatus($"Language: {language.ToUpperInvariant()}");
+        }
+
+        private void RefreshPreview()
+        {
+            if (_currentLanguage == "html" && !string.IsNullOrEmpty(_lastHtml))
+            {
+                _preview.UpdateContent(_lastHtml);
+                SetStatus("Preview refreshed");
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        //  Status bar
+        // ═══════════════════════════════════════════
+
+        private void SetStatus(string text)
+        {
+            if (statusLabel != null)
+                statusLabel.Text = text;
+        }
+    }
+
+    // ═══════════════════════════════════════════
+    //  Snippet Templates
+    // ═══════════════════════════════════════════
+
+    internal static class Snippets
+    {
+        public const string Boilerplate = @"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>Document</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 2rem; }
+    </style>
+</head>
+<body>
+    <h1>Hello World</h1>
+    <p>Start building here...</p>
+</body>
+</html>";
+
+        public const string Flexbox = @"<div style=""display: flex; gap: 1rem; align-items: center; justify-content: center; padding: 2rem;"">
+    <div style=""flex: 1; padding: 1rem; background: #f0f0f0; border-radius: 8px;"">Column 1</div>
+    <div style=""flex: 1; padding: 1rem; background: #e0e0e0; border-radius: 8px;"">Column 2</div>
+    <div style=""flex: 1; padding: 1rem; background: #d0d0d0; border-radius: 8px;"">Column 3</div>
+</div>";
+
+        public const string Grid = @"<div style=""display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding: 2rem;"">
+    <div style=""padding: 1rem; background: #f0f0f0; border-radius: 8px;"">Cell 1</div>
+    <div style=""padding: 1rem; background: #e0e0e0; border-radius: 8px;"">Cell 2</div>
+    <div style=""padding: 1rem; background: #d0d0d0; border-radius: 8px;"">Cell 3</div>
+    <div style=""padding: 1rem; background: #c0c0c0; border-radius: 8px;"">Cell 4</div>
+    <div style=""padding: 1rem; background: #b0b0b0; border-radius: 8px;"">Cell 5</div>
+    <div style=""padding: 1rem; background: #a0a0a0; border-radius: 8px;"">Cell 6</div>
+</div>";
+
+        public const string Form = @"<form style=""max-width: 400px; margin: 2rem auto; font-family: system-ui;"">
+    <div style=""margin-bottom: 1rem;"">
+        <label for=""name"" style=""display: block; margin-bottom: 0.25rem; font-weight: 600;"">Name</label>
+        <input type=""text"" id=""name"" placeholder=""Enter your name"" style=""width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;"" />
+    </div>
+    <div style=""margin-bottom: 1rem;"">
+        <label for=""email"" style=""display: block; margin-bottom: 0.25rem; font-weight: 600;"">Email</label>
+        <input type=""email"" id=""email"" placeholder=""Enter your email"" style=""width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;"" />
+    </div>
+    <div style=""margin-bottom: 1rem;"">
+        <label for=""message"" style=""display: block; margin-bottom: 0.25rem; font-weight: 600;"">Message</label>
+        <textarea id=""message"" rows=""4"" placeholder=""Your message..."" style=""width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;""></textarea>
+    </div>
+    <button type=""submit"" style=""padding: 0.5rem 1.5rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;"">Submit</button>
+</form>";
+
+        public const string Table = @"<table style=""border-collapse: collapse; width: 100%; font-family: system-ui;"">
+    <thead>
+        <tr style=""background: #f8f9fa;"">
+            <th style=""padding: 0.75rem; border: 1px solid #dee2e6; text-align: left;"">Name</th>
+            <th style=""padding: 0.75rem; border: 1px solid #dee2e6; text-align: left;"">Email</th>
+            <th style=""padding: 0.75rem; border: 1px solid #dee2e6; text-align: left;"">Role</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style=""padding: 0.75rem; border: 1px solid #dee2e6;"">Alice</td>
+            <td style=""padding: 0.75rem; border: 1px solid #dee2e6;"">alice@example.com</td>
+            <td style=""padding: 0.75rem; border: 1px solid #dee2e6;"">Admin</td>
+        </tr>
+        <tr style=""background: #f8f9fa;"">
+            <td style=""padding: 0.75rem; border: 1px solid #dee2e6;"">Bob</td>
+            <td style=""padding: 0.75rem; border: 1px solid #dee2e6;"">bob@example.com</td>
+            <td style=""padding: 0.75rem; border: 1px solid #dee2e6;"">User</td>
+        </tr>
+    </tbody>
+</table>";
     }
 }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Softcurse HTML Editor</title>
+    <title>Softcurse LiveScriptor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@300;400;600&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
@@ -292,7 +292,7 @@
     <div class="shell">
         <header>
             <div class="brand-main">
-                <div class="brand-title">Softcurse HTML Editor</div>
+                <div class="brand-title">Softcurse LiveScriptor</div>
                 <div class="brand-sub">DARK CONCORD INTERFACE &nbsp;|&nbsp; <span>BOUND TO PREVIEW REALM</span></div>
             </div>
             <div class="status-pill"><div class="status-dot"></div><span>LINK: STABLE</span></div>
@@ -389,19 +389,42 @@
             });
         });
 
-        // Listen for code from C# — works even if sent before editor exists
+        // Listen for messages from C# — works even if sent before editor exists
         if (window.chrome?.webview) {
             window.chrome.webview.addEventListener('message', event => {
                 try {
-                    const data = JSON.parse(event.data);
+                    // PostWebMessageAsJson sends event.data as already-parsed object
+                    // PostWebMessageAsString sends event.data as a raw string
+                    let data = event.data;
+                    if (typeof data === 'string') {
+                        data = JSON.parse(data);
+                    }
+
                     if (data.type === 'setCode' && data.text !== undefined) {
                         if (editor) {
                             editor.setValue(data.text);
                         } else {
-                            pendingCode = data.text; // store for when editor loads
+                            pendingCode = data.text;
+                        }
+                    } else if (data.type === 'setTheme' && data.theme) {
+                        monaco.editor.setTheme(data.theme);
+                    } else if (data.type === 'setLanguage' && data.language) {
+                        if (editor) {
+                            monaco.editor.setModelLanguage(editor.getModel(), data.language);
+                        }
+                    } else if (data.type === 'insertSnippet' && data.text) {
+                        if (editor) {
+                            const selection = editor.getSelection();
+                            editor.executeEdits('snippet', [{
+                                range: selection,
+                                text: data.text,
+                                forceMoveMarkers: true
+                            }]);
                         }
                     }
-                } catch (e) { }
+                } catch (e) {
+                    console.error('Message handler error:', e);
+                }
             });
         }
     </script>

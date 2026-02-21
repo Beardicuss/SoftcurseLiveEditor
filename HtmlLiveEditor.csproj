@@ -9,11 +9,18 @@
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 		<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 		<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+		<AssemblyName>LiveScriptor</AssemblyName>
+		<Product>Softcurse LiveScriptor</Product>
+		<ApplicationIcon>UI\logo.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<None Remove="App\editor.html" />
 		<None Remove="App\preview.html" />
+		<Compile Remove="HtmlLiveEditor.Tests\**" />
+		<Content Remove="HtmlLiveEditor.Tests\**" />
+		<EmbeddedResource Remove="HtmlLiveEditor.Tests\**" />
+		<None Remove="HtmlLiveEditor.Tests\**" />
 	</ItemGroup>
 
 	<ItemGroup>
