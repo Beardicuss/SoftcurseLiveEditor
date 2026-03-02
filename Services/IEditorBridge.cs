@@ -25,6 +25,9 @@ namespace HtmlLiveEditor.Services
         /// <summary>Highlight a specific line in the editor.</summary>
         void HighlightLine(int lineNumber, string cssClass);
 
+        /// <summary>Search for a snippet text in the editor and highlight the matching line.</summary>
+        void FindAndHighlight(string snippet, string cssClass);
+
         /// <summary>Clear all decorations of a given type.</summary>
         void ClearDecorations(string decoId);
 

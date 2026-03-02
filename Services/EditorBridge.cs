@@ -148,48 +148,23 @@ namespace HtmlLiveEditor.Services
             }
         }
 
-        /// <summary>Find the 1-based line number of a snippet in the editor content.</summary>
+        /// <summary>
+        /// FIX #1: No longer injects user content into a JS string (XSS risk).
+        /// Instead sends data via PostWebMessageAsJson and lets editor.html handle it.
+        /// </summary>
         public void FindAndHighlight(string snippet, string cssClass)
         {
             if (_webView?.CoreWebView2 == null || !IsReady || string.IsNullOrWhiteSpace(snippet))
                 return;
 
-            // Escape for JS template literal
-            string escaped = snippet
-                .Replace("\\", "\\\\")
-                .Replace("`", "\\`")
-                .Replace("$", "\\$");
-
-            string decoVar = cssClass == "hover-line" ? "_hoverDeco" : "_lastDeco";
-            string js = $@"
-                (function() {{
-                    if (!window.editor) return;
-                    const text = window.editor.getValue();
-                    const lines = text.split('\n');
-                    let targetLine = -1;
-                    const searchStr = `{escaped}`.trim();
-                    const token = searchStr.split(/[\s>]/)[0].replace(/^</, '');
-
-                    if (!token) return;
-
-                    for (let i = 0; i < lines.length; i++) {{
-                        if (lines[i].includes(token)) {{
-                            targetLine = i + 1;
-                            break;
-                        }}
-                    }}
-
-                    if (targetLine <= 0) return;
-
-                    if (window.{decoVar}) window.editor.deltaDecorations(window.{decoVar}, []);
-                    window.{decoVar} = window.editor.deltaDecorations([], [{{
-                        range: new monaco.Range(targetLine, 1, targetLine, 1),
-                        options: {{ isWholeLine: true, className: '{cssClass}' }}
-                    }}]);
-                    {(cssClass == "highlighted-line" ? "window.editor.revealLineInCenter(targetLine);" : "")}
-                }})();";
-
-            _webView.CoreWebView2.ExecuteScriptAsync(js);
+            var message = JsonSerializer.Serialize(new
+            {
+                type = "findAndHighlight",
+                snippet,
+                cssClass
+            });
+            _webView.CoreWebView2.PostWebMessageAsJson(message);
+            _log.Info($"FindAndHighlight sent for cssClass={cssClass}");
         }
     }
 }

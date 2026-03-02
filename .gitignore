@@ -364,4 +364,4 @@ FodyWeavers.xsd
 # Softcurse LiveScriptor Specific Ignores
 output/
 publish/
-*.autosave.html
+HtmlLiveEditor.settings.json

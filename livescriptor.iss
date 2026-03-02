@@ -1,5 +1,5 @@
 #define MyAppName "Softcurse LiveScriptor"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "Softcurse"
 #define MyAppExeName "LiveScriptor.exe"
 
@@ -13,7 +13,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir=output
 OutputBaseFilename=LiveScriptor_Setup
-SetupIconFile=UI\logo.ico
+SetupIconFile=UI\script.ico
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64compatible

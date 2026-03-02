@@ -54,9 +54,15 @@ namespace HtmlLiveEditor.Tests
         }
 
         [Fact]
-        public void AutoSaveSuffix_EndsWithHtml()
+        public void LastFileName_EndsWithHtml()
         {
-            Assert.EndsWith(".html", AppConstants.AutoSaveSuffix);
+            Assert.EndsWith(".html", AppConstants.LastFileName);
+        }
+
+        [Fact]
+        public void HardFileSizeLimit_Is5MB()
+        {
+            Assert.Equal(5_242_880, AppConstants.HardFileSizeLimit);
         }
     }
 }

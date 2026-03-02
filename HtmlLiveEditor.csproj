@@ -11,7 +11,7 @@
 		<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
 		<AssemblyName>LiveScriptor</AssemblyName>
 		<Product>Softcurse LiveScriptor</Product>
-		<ApplicationIcon>UI\logo.ico</ApplicationIcon>
+		<ApplicationIcon>UI\script.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -33,6 +33,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
 		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2365.46" />
 	</ItemGroup>
 

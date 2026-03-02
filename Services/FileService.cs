@@ -27,9 +27,20 @@ namespace HtmlLiveEditor.Services
 
             if (dialog.ShowDialog() != DialogResult.OK) return null;
 
+            // FIX #5: Guard file size BEFORE reading into memory
+            var info = new FileInfo(dialog.FileName);
+            if (info.Length > AppConstants.HardFileSizeLimit)
+            {
+                MessageBox.Show(
+                    $"File is too large to open safely ({info.Length / 1_048_576.0:F1} MB).\n" +
+                    $"Maximum is {AppConstants.HardFileSizeLimit / 1_048_576} MB.",
+                    "File Too Large", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
+
             CurrentFilePath = dialog.FileName;
             var content = File.ReadAllText(CurrentFilePath, Encoding.UTF8);
-            _log.Info($"Opened file: {CurrentFilePath} ({content.Length} chars)");
+            _log.Info($"Opened: {CurrentFilePath} ({content.Length} chars)");
             return content;
         }
 
@@ -59,22 +70,36 @@ namespace HtmlLiveEditor.Services
             return true;
         }
 
-        public async void AutoSave(string content)
+        // FIX #3: async void → async Task (exceptions are no longer swallowed silently)
+        // FIX #2: Writes to LocalApplicationData, not StartupPath (read-only after install)
+        public async Task AutoSaveAsync(string content)
         {
-            try
-            {
-                var path = Path.Combine(Application.StartupPath, "App", AppConstants.LastFileName);
-                await File.WriteAllTextAsync(path, content, Encoding.UTF8);
-            }
-            catch (Exception ex)
-            {
-                _log.Error("Auto-save failed", ex);
-            }
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var dir = Path.Combine(appData, "SoftcurseLiveScriptor");
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, AppConstants.LastFileName);
+            await File.WriteAllTextAsync(path, content, Encoding.UTF8);
+            _log.Info($"Auto-saved to: {path}");
         }
 
         public bool IsLargeFile(string content)
         {
             return Encoding.UTF8.GetByteCount(content) > AppConstants.LargeFileThreshold;
+        }
+
+        public string? OpenWorkspace()
+        {
+            using var dialog = new FolderBrowserDialog
+            {
+                Description = "Select Workspace Folder",
+                UseDescriptionForTitle = true,
+                ShowNewFolderButton = true
+            };
+
+            if (dialog.ShowDialog() != DialogResult.OK) return null;
+
+            _log.Info($"Workspace opened: {dialog.SelectedPath}");
+            return dialog.SelectedPath;
         }
     }
 }

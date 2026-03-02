@@ -9,7 +9,7 @@ namespace HtmlLiveEditor.Services
     {
         private readonly IAppLogger _log;
         private WebView2? _webView;
-        private string _lastHtml = string.Empty;
+        private string _lastRenderedHtml = string.Empty;
 
         public PreviewBridge(IAppLogger log)
         {
@@ -39,9 +39,9 @@ namespace HtmlLiveEditor.Services
                 return;
             }
 
-            // Skip if content is unchanged
-            if (html == _lastHtml) return;
-            _lastHtml = html;
+            // Skip if content is unchanged to avoid unnecessary DOM updates
+            if (html == _lastRenderedHtml) return;
+            _lastRenderedHtml = html;
 
             // Encode as JSON string to safely embed in JS (handles all escaping)
             string jsonSafe = JsonSerializer.Serialize(html);
@@ -49,8 +49,38 @@ namespace HtmlLiveEditor.Services
             string js = $@"
                 (function() {{
                     var el = document.getElementById('content');
-                    if (el) {{
-                        el.innerHTML = {jsonSafe};
+                    if (!el) return;
+                    
+                    var newHtml = {jsonSafe};
+                    
+                    function getStyles(html) {{
+                        var temp = document.createElement('div');
+                        temp.innerHTML = html;
+                        return Array.from(temp.querySelectorAll('style'));
+                    }}
+                    
+                    function getBodyStripped(html) {{
+                        var temp = document.createElement('div');
+                        temp.innerHTML = html;
+                        temp.querySelectorAll('style').forEach(s => s.remove());
+                        return temp.innerHTML.trim();
+                    }}
+                    
+                    var newBody = getBodyStripped(newHtml);
+                    var oldBody = getBodyStripped(el.innerHTML);
+                    
+                    if (newBody === oldBody) {{
+                        // Only styles changed — HMR
+                        el.querySelectorAll('style').forEach(s => s.remove());
+                        getStyles(newHtml).forEach(s => el.appendChild(s));
+                    }} else {{
+                        // Full rebuild — preserve scroll
+                        var scroller = document.querySelector('.main-layout');
+                        var st = scroller ? scroller.scrollTop : 0;
+                        
+                        el.innerHTML = newHtml;
+                        
+                        if (scroller) scroller.scrollTop = st;
                     }}
                 }})();";
 

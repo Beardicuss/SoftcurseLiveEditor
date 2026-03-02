@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Forms;
+using Microsoft.Extensions.DependencyInjection;
 using HtmlLiveEditor.Services;
 
 namespace HtmlLiveEditor
@@ -12,13 +13,23 @@ namespace HtmlLiveEditor
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            // Lightweight DI — create services and inject into form
-            var log = new AppLogger();
-            var fileService = new FileService(log);
-            var editorBridge = new EditorBridge(log);
-            var previewBridge = new PreviewBridge(log);
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            using var serviceProvider = services.BuildServiceProvider();
 
-            Application.Run(new Form1(log, fileService, editorBridge, previewBridge));
+            var form = serviceProvider.GetRequiredService<Form1>();
+            Application.Run(form);
+        }
+
+        private static void ConfigureServices(ServiceCollection services)
+        {
+            services.AddSingleton<IAppLogger, AppLogger>();
+            services.AddSingleton<IFileService, FileService>();
+            services.AddSingleton<IEditorBridge, EditorBridge>();
+            services.AddSingleton<IPreviewBridge, PreviewBridge>();
+            services.AddSingleton<ISettingsManager, SettingsManager>();
+
+            services.AddTransient<Form1>();
         }
     }
 }

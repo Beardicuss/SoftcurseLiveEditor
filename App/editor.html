@@ -1,11 +1,14 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Softcurse LiveScriptor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@300;400;600&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@300;400;600&family=Cinzel+Decorative:wght@400;700&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,7 +16,8 @@
             box-sizing: border-box;
         }
 
-        html, body {
+        html,
+        body {
             height: 100%;
             width: 100%;
             overflow: hidden;
@@ -32,7 +36,7 @@
             inset: -20%;
             pointer-events: none;
             z-index: 0;
-            background: radial-gradient(circle at 10% 20%, rgba(157,78,221,0.35), transparent 55%), radial-gradient(circle at 80% 10%, rgba(0,246,255,0.22), transparent 55%), radial-gradient(circle at 20% 85%, rgba(207,163,95,0.22), transparent 55%);
+            background: radial-gradient(circle at 10% 20%, rgba(157, 78, 221, 0.35), transparent 55%), radial-gradient(circle at 80% 10%, rgba(0, 246, 255, 0.22), transparent 55%), radial-gradient(circle at 20% 85%, rgba(207, 163, 95, 0.22), transparent 55%);
             mix-blend-mode: screen;
             animation: fogDrift 28s linear infinite alternate;
             opacity: 0.95;
@@ -40,15 +44,15 @@
 
         @keyframes fogDrift {
             0% {
-                transform: translate3d(-10px,-10px,0) scale(1);
+                transform: translate3d(-10px, -10px, 0) scale(1);
             }
 
             50% {
-                transform: translate3d(20px,10px,0) scale(1.05);
+                transform: translate3d(20px, 10px, 0) scale(1.05);
             }
 
             100% {
-                transform: translate3d(-15px,12px,0) scale(1.02);
+                transform: translate3d(-15px, 12px, 0) scale(1.02);
             }
         }
 
@@ -64,28 +68,29 @@
         .frame {
             position: fixed;
             inset: 6px;
-            border: 1px solid rgba(0,246,255,0.25);
-            box-shadow: 0 0 18px rgba(0,246,255,0.35), 0 0 60px rgba(157,78,221,0.35);
+            border: 1px solid rgba(0, 246, 255, 0.25);
+            box-shadow: 0 0 18px rgba(0, 246, 255, 0.35), 0 0 60px rgba(157, 78, 221, 0.35);
             pointer-events: none;
         }
 
-            .frame::before, .frame::after {
-                content: "";
-                position: absolute;
-                left: 8%;
-                right: 8%;
-                height: 1px;
-                background: linear-gradient(to right, transparent, rgba(0,246,255,0.7), transparent);
-                opacity: 0.4;
-            }
+        .frame::before,
+        .frame::after {
+            content: "";
+            position: absolute;
+            left: 8%;
+            right: 8%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(0, 246, 255, 0.7), transparent);
+            opacity: 0.4;
+        }
 
-            .frame::before {
-                top: 48px;
-            }
+        .frame::before {
+            top: 48px;
+        }
 
-            .frame::after {
-                bottom: 34px;
-            }
+        .frame::after {
+            bottom: 34px;
+        }
 
         header {
             display: flex;
@@ -100,7 +105,7 @@
             letter-spacing: 0.26em;
             text-transform: uppercase;
             color: #f7f2ff;
-            text-shadow: 0 0 10px rgba(0,246,255,0.9), 0 0 28px rgba(157,78,221,0.95);
+            text-shadow: 0 0 10px rgba(0, 246, 255, 0.9), 0 0 28px rgba(157, 78, 221, 0.95);
         }
 
         .brand-sub {
@@ -111,18 +116,18 @@
             opacity: 0.9;
         }
 
-            .brand-sub span {
-                color: #00f6ff;
-            }
+        .brand-sub span {
+            color: #00f6ff;
+        }
 
         .status-pill {
             font-size: 0.6rem;
             letter-spacing: 0.18em;
             padding: 4px 12px;
             border-radius: 999px;
-            border: 1px solid rgba(0,246,255,0.4);
-            background: linear-gradient(135deg, rgba(7,11,24,0.94), rgba(31,8,53,0.96));
-            box-shadow: 0 0 12px rgba(0,246,255,0.7), 0 0 30px rgba(157,78,221,0.7);
+            border: 1px solid rgba(0, 246, 255, 0.4);
+            background: linear-gradient(135deg, rgba(7, 11, 24, 0.94), rgba(31, 8, 53, 0.96));
+            box-shadow: 0 0 12px rgba(0, 246, 255, 0.7), 0 0 30px rgba(157, 78, 221, 0.7);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -133,12 +138,14 @@
             height: 8px;
             border-radius: 50%;
             background: #00f6ff;
-            box-shadow: 0 0 10px #00f6ff, 0 0 20px rgba(0,246,255,0.95);
+            box-shadow: 0 0 10px #00f6ff, 0 0 20px rgba(0, 246, 255, 0.95);
             animation: pulseDot 1.4s ease-in-out infinite;
         }
 
         @keyframes pulseDot {
-            0%,100% {
+
+            0%,
+            100% {
                 transform: scale(1);
                 opacity: 0.7;
             }
@@ -168,23 +175,23 @@
 
         .info-card {
             border-radius: 6px;
-            border: 1px solid rgba(0,246,255,0.28);
-            background: linear-gradient(145deg, rgba(10,4,18,0.97), rgba(26,7,45,0.95));
-            box-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 18px rgba(0,246,255,0.25);
+            border: 1px solid rgba(0, 246, 255, 0.28);
+            background: linear-gradient(145deg, rgba(10, 4, 18, 0.97), rgba(26, 7, 45, 0.95));
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.9), 0 0 18px rgba(0, 246, 255, 0.25);
             padding: 7px 9px;
             position: relative;
             overflow: hidden;
         }
 
-            .info-card::before {
-                content: "";
-                position: absolute;
-                inset: 2px;
-                border-radius: 4px;
-                border: 1px solid rgba(207,163,95,0.2);
-                opacity: 0.7;
-                pointer-events: none;
-            }
+        .info-card::before {
+            content: "";
+            position: absolute;
+            inset: 2px;
+            border-radius: 4px;
+            border: 1px solid rgba(207, 163, 95, 0.2);
+            opacity: 0.7;
+            pointer-events: none;
+        }
 
         .info-title {
             color: #cfa35f;
@@ -203,24 +210,24 @@
         .editor-panel {
             flex: 1;
             border-radius: 8px;
-            border: 1px solid rgba(0,246,255,0.4);
-            background: linear-gradient(145deg, rgba(10,4,18,0.98), rgba(20,5,36,0.98));
-            box-shadow: 0 0 16px black, 0 0 30px rgba(0,246,255,0.45);
+            border: 1px solid rgba(0, 246, 255, 0.4);
+            background: linear-gradient(145deg, rgba(10, 4, 18, 0.98), rgba(20, 5, 36, 0.98));
+            box-shadow: 0 0 16px black, 0 0 30px rgba(0, 246, 255, 0.45);
             display: flex;
             flex-direction: column;
             position: relative;
             overflow: hidden;
         }
 
-            .editor-panel::before {
-                content: "";
-                position: absolute;
-                inset: 7px;
-                border-radius: 6px;
-                border: 1px solid rgba(157,78,221,0.25);
-                opacity: 0.8;
-                pointer-events: none;
-            }
+        .editor-panel::before {
+            content: "";
+            position: absolute;
+            inset: 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(157, 78, 221, 0.25);
+            opacity: 0.8;
+            pointer-events: none;
+        }
 
         .editor-header {
             padding: 6px 12px 4px;
@@ -233,18 +240,18 @@
             align-items: center;
         }
 
-            .editor-header span.small {
-                font-size: 0.58rem;
-                opacity: 0.8;
-                color: #cfa35f;
-            }
+        .editor-header span.small {
+            font-size: 0.58rem;
+            opacity: 0.8;
+            color: #cfa35f;
+        }
 
         #container {
             flex: 1;
             margin: 6px 8px 10px;
             border-radius: 4px;
             overflow: hidden;
-            box-shadow: 0 0 12px black, 0 0 24px rgba(0,246,255,0.4);
+            box-shadow: 0 0 12px black, 0 0 24px rgba(0, 246, 255, 0.4);
         }
 
         footer {
@@ -255,27 +262,27 @@
             text-transform: uppercase;
             color: #e8dcff;
             font-family: 'Cinzel Decorative', serif;
-            text-shadow: 0 0 8px rgba(0,246,255,0.6), 0 0 18px rgba(157,78,221,0.8);
+            text-shadow: 0 0 8px rgba(0, 246, 255, 0.6), 0 0 18px rgba(157, 78, 221, 0.8);
         }
 
-            footer .author {
-                color: #ffe8a4;
-            }
+        footer .author {
+            color: #ffe8a4;
+        }
 
-            footer .org {
-                color: #00f6ff;
-            }
+        footer .org {
+            color: #00f6ff;
+        }
 
         .highlighted-line {
-            background-color: rgba(255,230,128,0.45) !important;
+            background-color: rgba(255, 230, 128, 0.45) !important;
         }
 
         .hover-line {
-            background-color: rgba(0,246,255,0.26) !important;
+            background-color: rgba(0, 246, 255, 0.26) !important;
         }
 
         .clicked-line {
-            background-color: rgba(0,255,128,0.3) !important;
+            background-color: rgba(0, 255, 128, 0.3) !important;
             border-left: 3px solid #00ff80;
         }
 
@@ -286,6 +293,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="bg-fog"></div>
     <div class="frame"></div>
@@ -295,23 +303,33 @@
                 <div class="brand-title">Softcurse LiveScriptor</div>
                 <div class="brand-sub">DARK CONCORD INTERFACE &nbsp;|&nbsp; <span>BOUND TO PREVIEW REALM</span></div>
             </div>
-            <div class="status-pill"><div class="status-dot"></div><span>LINK: STABLE</span></div>
+            <div class="status-pill">
+                <div class="status-dot"></div><span>LINK: STABLE</span>
+            </div>
         </header>
         <div class="main-layout">
             <aside class="side-info">
-                <div class="info-card"><div class="info-title">SESSION PROFILE</div><div class="info-body">MODE: HTML<br>REALM: UI / LAYOUT<br>SYNC: BI-DIRECTIONAL</div></div>
-                <div class="info-card"><div class="info-title">USAGE HINT</div><div class="info-body">HOVER: MAP ELEMENTS<br>CLICK: HARD LINK<br>SAVE: MENU &amp; DISK</div></div>
+                <div class="info-card">
+                    <div class="info-title">SESSION PROFILE</div>
+                    <div class="info-body">MODE: HTML<br>REALM: UI / LAYOUT<br>SYNC: BI-DIRECTIONAL</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-title">USAGE HINT</div>
+                    <div class="info-body">HOVER: MAP ELEMENTS<br>CLICK: HARD LINK<br>SAVE: MENU &amp; DISK</div>
+                </div>
             </aside>
             <section class="editor-panel">
                 <div class="editor-header"><span>CODE SANCTUM</span><span class="small">BORDERLINE CURSED</span></div>
                 <div id="container"></div>
             </section>
         </div>
-        <footer><span class="label">Created by</span> <span class="author">Dante Berezinsky</span> · <span class="org">Softcurse Corp.</span></footer>
+        <footer><span class="label">Created by</span> <span class="author">Dante Berezinsky</span> · <span
+                class="org">Softcurse Corp.</span></footer>
     </div>
 
     <!-- LOCAL Monaco Editor (no internet needed) -->
     <script src="vs/loader.js"></script>
+    <script src="vs/emmet-monaco.min.js"></script>
     <script>
         require.config({ paths: { 'vs': 'vs' } });
 
@@ -319,6 +337,19 @@
         let pendingCode = null;
 
         require(['vs/editor/editor.main'], function () {
+
+            // Enable True IntelliSense via Web Workers
+            window.MonacoEnvironment = {
+                getWorkerUrl: function (workerId, label) {
+                    return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+                        self.MonacoEnvironment = {
+                            baseUrl: '${window.location.origin}/vs'
+                        };
+                        importScripts('${window.location.origin}/vs/base/worker/workerMain.js');
+                    `)}`;
+                }
+            };
+
             editor = monaco.editor.create(document.getElementById('container'), {
                 value: `<!DOCTYPE html>
 <html>
@@ -333,8 +364,20 @@
                 automaticLayout: true,
                 fontSize: 15,
                 wordWrap: 'on',
+                wordWrap: 'on',
                 minimap: { enabled: false }
             });
+
+            // Expose globally for snippet injection and highlighting handlers
+            window.editor = editor;
+            window.isSettingCode = false;
+
+            // Initialize Emmet
+            if (window.emmetMonaco) {
+                emmetMonaco.emmetHTML(monaco);
+                emmetMonaco.emmetCSS(monaco);
+                emmetMonaco.emmetJSX(monaco);
+            }
 
             // Tell C# we are READY
             if (window.chrome?.webview) {
@@ -350,6 +393,8 @@
             // Live sync to preview
             let timer = null;
             editor.onDidChangeModelContent(() => {
+                if (isSettingCode) return; // Ignore programmatic writes
+
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(() => {
                     if (window.chrome?.webview) {
@@ -402,7 +447,9 @@
 
                     if (data.type === 'setCode' && data.text !== undefined) {
                         if (editor) {
+                            window.isSettingCode = true;
                             editor.setValue(data.text);
+                            window.isSettingCode = false;
                         } else {
                             pendingCode = data.text;
                         }
@@ -421,6 +468,28 @@
                                 forceMoveMarkers: true
                             }]);
                         }
+                    } else if (data.type === 'findAndHighlight') {
+                        const { snippet, cssClass } = data;
+                        if (window.editor) {
+                            const text = window.editor.getValue();
+                            const lines = text.split('\n');
+                            const token = snippet.trim().split(/[\s>]/)[0].replace(/^</, '');
+                            if (token) {
+                                let targetLine = -1;
+                                for (let i = 0; i < lines.length; i++) {
+                                    if (lines[i].includes(token)) { targetLine = i + 1; break; }
+                                }
+                                if (targetLine > 0) {
+                                    const decoVar = cssClass === 'hover-line' ? '_hoverDeco' : '_lastDeco';
+                                    if (window[decoVar]) window.editor.deltaDecorations(window[decoVar], []);
+                                    window[decoVar] = window.editor.deltaDecorations([], [{
+                                        range: new monaco.Range(targetLine, 1, targetLine, 1),
+                                        options: { isWholeLine: true, className: cssClass }
+                                    }]);
+                                    if (cssClass === 'highlighted-line') window.editor.revealLineInCenter(targetLine);
+                                }
+                            }
+                        }
                     }
                 } catch (e) {
                     console.error('Message handler error:', e);
@@ -429,4 +498,5 @@
         }
     </script>
 </body>
+
 </html>
